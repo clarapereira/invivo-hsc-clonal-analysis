@@ -1,7 +1,7 @@
 
 
 addLohFromE6Rnaseq <- function(df_long = aici_table_long, min  = 0.25,  max = 0.75){
-  #'Identify genes LOH E6 using RNA seq
+  #' Flag possible LOH genes within experiment 6 (E6) using RNA-seq data using threshold given by user
   #'
   #'
   df.E6_wider <- df_long %>% 
