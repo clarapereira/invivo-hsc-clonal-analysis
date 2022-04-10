@@ -1,3 +1,4 @@
+
 # this script overlaps our data with geneimprint dataset (imprinted list of genes)
 # it filters our genes for the expressed ones (but we can change that by varying the var cpm_threshold - default is cpm_threshold = 10)
 # outputs a dot plot with the overlaps and AI values per gene in our data
@@ -11,8 +12,12 @@ source("R/random_hsc_functions.R")
 # user-defined variables: 
 # ==============================================================================================================================
 dataset <- "all_replace_with_downsampled"
-min_coverage <- 10
-coverage_threshold <- min_coverage
+min_coverage <- 10    # coverage threshold
+cpm_threshold <- 10   # abundance threshold (is different from coverage)
+biomart_path <- "../tables/genes_biomaRt.tsv"   # already contains geneimprint data
+abundance_path <- "../abundance_edgeR/B_vs_T_v2/mean_abundance.tsv"
+loh_wes_path <- "../tables/wes/LOH_wes_light_thrcov_90.tsv"
+output_plot_path <- "../imprinted/plots"
 
 
 # ==============================================================================================================================
@@ -24,18 +29,17 @@ head(aici_table_long)
 
 # ==============================================================================================================================
 # 1. add all metadata, including: 
+# ==============================================================================================================================
 # - study metadata 
 # - imprinted genes db
 # - biomart db
 # - expression data 
 # - filter by genes by expression (choose threshold)
-# ==============================================================================================================================
-
 aici_table_long.expressed <- aici_table_long %>% 
   addAllMetaWrapper(
-    biomart_path = "../tables/genes_biomaRt.tsv", 
-    norm_path = "../abundance_edgeR/B_vs_T_v2/mean_abundance.tsv", 
-    cpm_threshold = 10
+    biomart_path = biomart_path, 
+    norm_path = abundance_path, 
+    cpm_threshold = cpm_threshold
   ) %>% 
   # keep only chr of interest
   dplyr::filter(!grepl("^chrJ|^chrG|^chrMT|^chrY", chr)) ; head(aici_table_long.expressed)
@@ -46,7 +50,7 @@ aici_table_long.expressed <- aici_table_long %>%
 # from WES: 
 aici_table_long.expressed.lohwes <- aici_table_long.expressed %>% 
   addLohFromWes(
-    loh_path = "../tables/wes/LOH_wes_light_thrcov_90.tsv"
+    loh_path = loh_wes_path
   )
 # # from E6: 
 # aici_table_long.expressed.lohwes.lohrna <- aici_table_long.expressed.lohwes %>% 
@@ -93,7 +97,10 @@ aici_table_long.expressed.noloh %>%
   group_by(imprinted_status) %>% 
   summarise(count = n())
 
-# how do these imprinted look like in our data?
+# ==============================================================================================================================
+# Plot
+# ==============================================================================================================================
+# how do these "imprinted" genes look like in our data?
 # with dots
 aici_table_long.expressed.noloh %>% 
   filter(imprinted_status == "Imprinted") %>% 
@@ -111,7 +118,7 @@ aici_table_long.expressed.noloh %>%
   )
 
 ggsave(
-  "../imprinted/plots/imprinted_genes_expressed_in_our_samples.pdf",
+  paste0(output_plot_path, "/imprinted_genes_expressed_in_hsc_samples.pdf"),
   width = 6,
   height = 5
 )
