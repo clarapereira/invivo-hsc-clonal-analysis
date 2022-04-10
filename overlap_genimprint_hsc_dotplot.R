@@ -1,4 +1,4 @@
-
+#!/usr/bin/Rscript
 # this script overlaps our data with geneimprint dataset (imprinted list of genes)
 # it filters our genes for the expressed ones (but we can change that by varying the var cpm_threshold - default is cpm_threshold = 10)
 # outputs a dot plot with the overlaps and AI values per gene in our data
@@ -47,7 +47,7 @@ aici_table_long.expressed <- aici_table_long %>%
 # ==============================================================================================================================
 # 2. add also LOH: 
 # ==============================================================================================================================
-# from WES: 
+# 2.1 add from WES: 
 aici_table_long.expressed.lohwes <- aici_table_long.expressed %>% 
   addLohFromWes(
     loh_path = loh_wes_path
@@ -59,23 +59,29 @@ aici_table_long.expressed.lohwes <- aici_table_long.expressed %>%
 #     max = 0.75
 #  )
 
-# remove LOH: 
+# 2.2 remove LOH: 
 aici_table_long.expressed.noloh <- aici_table_long.expressed.lohwes %>% #nrow()
   dplyr::filter(LOH_ANYsamples == "not_loh")#; aici_table_long.expressed.noloh %>% nrow()
 
-# how many genes are expressed in our dataset?
-aici_table_long.expressed %>% 
-  select(ID) %>% 
-  distinct() %>% 
-  nrow()
+# =======================================
+# Output some reports
+# =======================================
+message(
+  "Total genes expressed in the dataset: ",
+  aici_table_long.expressed %>% 
+    select(ID) %>% 
+    distinct() %>% 
+    nrow(),
+  "\nAfter LOH removal, remained: ",
+  aici_table_long.expressed.noloh %>% 
+    select(ID) %>% 
+    distinct() %>% 
+    nrow()
+)
 
-# and after removing LOH?
-aici_table_long.expressed.noloh %>% 
-  select(ID) %>% 
-  distinct() %>% 
-  nrow()
-
-# how many of these are imprinted?
+message(
+  "How many of these are imprinted?"
+)
 # all database: 
 aici_table_long.expressed.noloh %>% 
   select(ID, gene, imprinted_status) %>% 
@@ -83,6 +89,9 @@ aici_table_long.expressed.noloh %>%
   group_by(imprinted_status) %>% 
   summarise(count = n())
 # in B cells: 
+message(
+  "How many of these are imprinted in B cells?"
+)
 aici_table_long.expressed.noloh %>% 
   filter(cell_type == "Bcells") %>% 
   select(ID, gene, imprinted_status) %>% 
@@ -90,6 +99,9 @@ aici_table_long.expressed.noloh %>%
   group_by(imprinted_status) %>% 
   summarise(count = n())
 # in T cells: 
+message(
+  "How many of these are imprinted in T cells?"
+)
 aici_table_long.expressed.noloh %>% 
   filter(cell_type == "Tcells") %>% 
   select(ID, gene, imprinted_status) %>% 
@@ -98,7 +110,7 @@ aici_table_long.expressed.noloh %>%
   summarise(count = n())
 
 # ==============================================================================================================================
-# Plot
+# 3. Plot
 # ==============================================================================================================================
 # how do these "imprinted" genes look like in our data?
 # with dots
@@ -121,4 +133,8 @@ ggsave(
   paste0(output_plot_path, "/imprinted_genes_expressed_in_hsc_samples.pdf"),
   width = 6,
   height = 5
+)
+
+message(
+  "Plot saved as: ", paste0(output_plot_path, "/imprinted_genes_expressed_in_hsc_samples.pdf") 
 )
