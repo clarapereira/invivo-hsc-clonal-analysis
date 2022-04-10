@@ -1,9 +1,7 @@
 library(tidyverse)
 library(GenomicRanges)
 
-source("/Users/clarapereira/Dropbox/Boston_partners/HSC_clones_shared_folder/repository/random_hsc_functions.R")
-
-# TODO: NEED TO REMOVE LOH!!!!!!!!!!!!
+source("R/random_hsc_functions.R")
 
 # ==============================================================================================================================
 # user-defined variables: 

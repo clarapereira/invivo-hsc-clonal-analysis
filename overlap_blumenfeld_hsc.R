@@ -1,7 +1,7 @@
 library(tidyverse)
 library(GenomicRanges)
 
-source("/Users/clarapereira/Dropbox/Boston_partners/HSC_clones_shared_folder/repository/random_hsc_functions.R")
+source("R/random_hsc_functions.R")
 
 
 # ==============================================================================================================================
