@@ -52,10 +52,10 @@ aici_table_long.expressed.lohwes <- aici_table_long.expressed %>%
   addLohFromWes(
     loh_path = loh_wes_path
   )
-# # from E6: 
-# aici_table_long.expressed.lohwes.lohrna <- aici_table_long.expressed.lohwes %>% 
+# # from E6:
+# aici_table_long.expressed.lohwes.lohrna <- aici_table_long.expressed.lohwes %>%
 #   addLohFromE6Rnaseq(
-#     min  = 0.25,  
+#     min  = 0.25,
 #     max = 0.75
 #  )
 
@@ -136,5 +136,5 @@ ggsave(
 )
 
 message(
-  "Plot saved as: ", paste0(output_plot_path, "/imprinted_genes_expressed_in_hsc_samples.pdf") 
+  "Plot saved as: ", paste0(output_plot_path, "/imprinted_genes_expressed_cpm",cpm_threshold,"_in_hsc_samples.pdf") 
 )

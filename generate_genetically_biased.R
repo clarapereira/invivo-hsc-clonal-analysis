@@ -10,8 +10,8 @@ dataset <- "all_replace_with_downsampled"
 min_coverage <- 10
 coverage_threshold <- min_coverage
 #
-biascutof <- 10 
-min_impr  <- 0.1 
+biascutof <- 10
+min_impr  <- 0.1
 max_impr <- 0.9
 output_folder.lists <- "../tables/imprinted/gene_lists/"
 output_folder.dfs <- "../imprinted/tables/"
@@ -39,12 +39,12 @@ aici_table_long.expressed <- aici_table_long %>%
 # classify genetically biased, biascutof: (output is wider)
 # ==============================================================================================================================
 aici_table_long.expressed.biased.biascutof <- aici_table_long.expressed %>% 
-  getGeneticallyBiased(min_impr  = min_impr, max_impr = max_impr); head(aici_table_long.expressed.biased)
+  getGeneticallyBiased(min_impr  = min_impr, max_impr = max_impr); head(aici_table_long.expressed.biased.biascutof)
 aici_table_long.expressed.biased.biascutof %>% 
   write_delim(paste0(output_folder.dfs, "genetically_biased_biascutof",biascutof,"_dfwider.tsv"), delim = "\t")
 
 
-potentially_imprinted.biascutof <- aici_table_long.expressed.biased %>%
+potentially_imprinted.biascutof <- aici_table_long.expressed.biased.biascutof %>%
   dplyr::select(
     ID, 
     imprinted_Bcells, 
@@ -52,7 +52,7 @@ potentially_imprinted.biascutof <- aici_table_long.expressed.biased %>%
     ) %>% 
   filter(
     imprinted_Bcells == "genetically_biased" | imprinted_Tcells == "genetically_biased"
-    ); head(potentially_imprinted.biascutof10)
+    ); head(potentially_imprinted.biascutof)
 # how many?
 potentially_imprinted.biascutof %>% nrow()
 potentially_imprinted.biascutof %>% 
