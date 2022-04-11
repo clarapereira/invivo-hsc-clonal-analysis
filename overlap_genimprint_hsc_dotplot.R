@@ -36,7 +36,7 @@ head(aici_table_long)
 # - biomart db
 # - expression data 
 # - filter by genes by expression (choose threshold)
-aici_table_long.expressed.badImprint <- aici_table_long %>% 
+aici_table_long.expressed <- aici_table_long %>% 
   addAllMetaWrapper(
     biomart_path = biomart_path, 
     bedfile = bedfile,
@@ -46,30 +46,24 @@ aici_table_long.expressed.badImprint <- aici_table_long %>%
   # keep only chr of interest
   dplyr::filter(!grepl("^chrJ|^chrG|^chrMT|^chrY", chr)) ; head(aici_table_long.expressed.badNames )
 
-aici_table_long.expressed.badImprint %>% 
-  dplyr::select(ID, imprinted_status) %>% 
-  dplyr::distinct() %>% 
-  dplyr::group_by(imprinted_status) %>% 
-  dplyr::summarise(n())
 
-
-# retrieve as many imprinted genes as possible: 
-geneimprint.annotated <- data.table::fread("../tables/geneimprint.annotated.tsv") 
-
-
-aici_table_long.expressed <- aici_table_long.expressed.badImprint %>% 
-  dplyr::rename(imprinted_status.old = imprinted_status) %>% 
-  left_join(
-    geneimprint.annotated %>% dplyr::select(ensembl_id, imprinted_status),
-    by = c("ID" = "ensembl_id")
-  ) 
-aici_table_long.expressed %>% 
-  filter(imprinted_status.old == "Imprinted" | imprinted_status == "Imprinted" ) %>% 
-  dplyr::select(ID, gene, gene_name, imprinted_status.old, imprinted_status) %>% 
-  dplyr::distinct() #%>% 
-  #dplyr::group_by(imprinted_status.old) %>% 
-  #dplyr::group_by(imprinted_status) %>%
-  #dplyr::summarise(n())
+# # retrieve as many imprinted genes as possible: 
+# geneimprint.annotated <- data.table::fread("../tables/geneimprint.annotated.tsv") 
+# 
+# 
+# aici_table_long.expressed <- aici_table_long.expressed.badImprint %>% 
+#   dplyr::rename(imprinted_status.old = imprinted_status) %>% 
+#   left_join(
+#     geneimprint.annotated %>% dplyr::select(ensembl_id, imprinted_status),
+#     by = c("ID" = "ensembl_id")
+#   ) 
+# aici_table_long.expressed %>% 
+#   filter(imprinted_status.old == "Imprinted" | imprinted_status == "Imprinted" ) %>% 
+#   dplyr::select(ID, gene, gene_name, imprinted_status.old, imprinted_status) %>% 
+#   dplyr::distinct() #%>% 
+#   #dplyr::group_by(imprinted_status.old) %>% 
+#   #dplyr::group_by(imprinted_status) %>%
+#   #dplyr::summarise(n())
 
 
 aici_table_long.expressed %>% 

@@ -15,7 +15,7 @@ addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tab
     )
   
   # ==============================================================================================================================
-  # add normalized gene expression values and filter for CPM>10
+  # add gene_names from GTF file
   # ==============================================================================================================================
   from_gtf <- getGtfCoordinates(bedfile = bedfile)
   df_long_meta_biomart_gtf <- df_long_meta_biomart %>% 
@@ -23,10 +23,23 @@ addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tab
       from_gtf %>% dplyr::select(gene_id,  gene_name, strand) %>% dplyr::distinct(),
       by = c("ID" = "gene_id")
     ) 
+  
+  # ==============================================================================================================================
+  # correct genemprint annotation
+  # ==============================================================================================================================
+  geneimprint.annotated <- data.table::fread("../tables/geneimprint.annotated.tsv") 
+  df_long_meta_biomart_gtf_imprintscorr <-  df_long_meta_biomart_gtf %>% 
+    dplyr::rename(imprinted_status.old = imprinted_status) %>% 
+    left_join(
+      geneimprint.annotated %>% dplyr::select(ensembl_id, imprinted_status),
+      by = c("ID" = "ensembl_id")
+    ) 
+  
+  
   # ==============================================================================================================================
   # add normalized gene expression values and filter for CPM>10
   # ==============================================================================================================================
-  df_long_meta_biomart_gtf.expressed <-  df_long_meta_biomart_gtf %>% 
+  df_long_meta_biomart_gtf.expressed <-  df_long_meta_biomart_gtf_imprintscorr %>% 
     addNormalizedAndFilter(
       norm_path = norm_path, 
       cpm_threshold = cpm_threshold
