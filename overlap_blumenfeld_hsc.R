@@ -48,27 +48,27 @@ aici_table_long.expressed.noloh %>% nrow()
 
 # how many genes are expressed in our dataset?
 aici_table_long.expressed %>% 
-  select(ID) %>% 
-  distinct() %>% 
+  dplyr::select(ID) %>% 
+  dplyr::distinct() %>% 
   nrow()
 
 # and after removing LOH?
 aici_table_long.expressed.noloh %>% 
-  select(ID) %>% 
-  distinct() %>% 
+  dplyr::select(ID) %>% 
+  dplyr::distinct() %>% 
   nrow()
 
 # how many of these are imprinted?
 aici_table_long.expressed.noloh %>% 
-  select(ID, gene, imprinted_status) %>% 
-  distinct() %>% 
-  group_by(imprinted_status) %>% 
-  summarise(count = n())
+  dplyr::select(ID, gene, imprinted_status) %>% 
+  dplyr::distinct() %>% 
+  dplyr::group_by(imprinted_status) %>% 
+  dplyr::summarise(count = n())
 
 # how do these imprinted look like in our data?
 aici_table_long.expressed.noloh %>% #head()
   #filter(clonality == "non_monoclonal") %>% 
-  filter(imprinted_status == "Imprinted") %>% 
+  dplyr::filter(imprinted_status == "Imprinted") %>% 
   #na.omit() %>% 
   ggplot(aes(x=gene, y = AI)) +
   theme_light() +
@@ -77,7 +77,7 @@ aici_table_long.expressed.noloh %>% #head()
   facet_wrap(vars(clonality))
 # with dots
 aici_table_long.expressed.noloh %>% 
-  filter(imprinted_status == "Imprinted") %>% 
+  dplyr::filter(imprinted_status == "Imprinted") %>% 
   ggplot(aes(x=gene, y = AI, alpha = abundance, color = cell_type)) + 
   theme_light() +
   #geom_violin() +
@@ -116,10 +116,10 @@ get_lifted <- data.table::fread(blumenfeld_bed) %>%
 # 1. the following command will filter only CDS, and extract a bed file from our GTF file; it will save the bed file, and we will open it afterwards
 #    the command is : awk 'BEGIN{OFS="\t";} $3=="CDS" {print $1,$4-1,$5,$10,$16,$6,$7}' "/Users/clarapereira/Dropbox/Barreto_lab/reference/release-68/Mus_musculus.GRCm38.68.gtf" | sed 's/"//g' | sed 's/;//g' | sortBed > "/Users/clarapereira/Dropbox/Boston_partners/HSC_clones_shared_folder/asynchronous_replication_overlap/coordinates_mm10.bed"
 input_gtf <- "/Users/clarapereira/Dropbox/Barreto_lab/reference/release-68/Mus_musculus.GRCm38.68.gtf"
-output_bed = "/Users/clarapereira/Dropbox/Boston_partners/HSC_clones_shared_folder/asynchronous_replication_overlap/coordinates_mm10.bed"
+output_bed = "../asynchronous_replication_overlap/coordinates_mm10_exon.bed"
 system(
   #"awk 'BEGIN{OFS=\"\t\";} $3==\"CDS\" {print $1,$4-1,$5,$10,$16,$6,$7}' \"/Users/clarapereira/Dropbox/Barreto_lab/reference/release-68/Mus_musculus.GRCm38.68.gtf\" | sed 's/\"//g' | sed 's/;//g' | sortBed > \"/Users/clarapereira/Dropbox/Boston_partners/HSC_clones_shared_folder/asynchronous_replication_overlap/coordinates_mm10.bed\"" # this works
-  paste0("awk 'BEGIN{OFS=\"\t\";} $3==\"CDS\" {print $1,$4-1,$5,$10,$16,$6,$7}' ",input_gtf," | sed 's/\"//g' | sed 's/;//g' | sortBed > ",output_bed )
+  paste0("awk 'BEGIN{OFS=\"\t\";} $3==\"exon\" {print $1,$4-1,$5,$10,$16,$6,$7}' ",input_gtf," | sed 's/\"//g' | sed 's/;//g' | sortBed > ",output_bed )
   )
 # 2. now we can get the data we' are interested in're looking for: 
 coord_from_gtf <- data.table::fread(output_bed) %>% 
@@ -135,6 +135,8 @@ coord_from_gtf <- data.table::fread(output_bed) %>%
     "gene_id" = "V4",
     "gene_name" = "V5"
   )
+
+
 
 # ==============================================================================================================================
 # Make the overlaps: 
@@ -172,16 +174,16 @@ assy_genes <- all_genes_in_blumenfeld %>%
   dplyr::distinct(); head(assy_genes)
 
 assy_genes %>% 
-  select(gene_name) %>% 
-  distinct() %>% 
+  dplyr::select(gene_name) %>% 
+  dplyr::distinct() %>% 
   nrow()
 
 # ==============================================================================================================================
 # How many of these genes are expressed in our dataset?
 # ==============================================================================================================================
 assy_genes.expressed.data <- assy_genes %>% 
-  left_join(
-    aici_table_long.expressed.noloh %>% select(ID) %>% distinct() %>% mutate(expressed = "yes"),
+  dplyr::left_join(
+    aici_table_long.expressed.noloh %>% dplyr::select(ID) %>% dplyr::distinct() %>% dplyr::mutate(expressed = "yes"),
     by = c("gene_id" = "ID")
   ); head(assy_genes.expressed.data)
 #
@@ -219,10 +221,10 @@ assy_genes %>%
 # How many of the genes in the Blumenfeld regions are imprinted according with geneimprint?
 # ==============================================================================================================================
 
-assy_genes.imprint.data <- assy_genes.expressed.data %>% 
+assy_genes.imprint.data <- assy_genes.expressed.data %>% #nrow()
   dplyr::rename(ID = gene_id) %>% 
   addBiomartMeta(biomart_path = "../tables/genes_biomaRt.tsv"); head(assy_genes.imprint.data)
-
+#assy_genes.imprint.data %>% filter(is.na(gene))
 assy_genes.imprint.data %>% 
   group_by(imprinted_status) %>% 
   summarise(count = n())
@@ -241,28 +243,32 @@ assy_genes.expressed.data.hsc <- assy_genes.expressed.data %>%
     by = c("gene_id" = "ID" )
   ); head(assy_genes.expressed.data.hsc)
 
-assy_genes.expressed.data.hsc %>% 
-  #dplyr::filter(grepl("^chr11|^chr18|^chr19", seqnames)) %>% 
-  dplyr::filter(seqnames == "chr5") %>% 
-  ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = cell_type)) +
-  theme_light() +
-  #geom_violin() +
-  geom_point() +
-  geom_jitter() +
-  coord_flip() +
-  facet_wrap(vars(clonality)) +
-  #facet_grid(vars(cell_type), vars(clonality))
-  #facet_grid( vars(seqnames),vars(clonality))
-  ggtitle(
-  "Chr5 expressed genes within Blumenfeld et. al regions",
-  subtitle = "(Lymplocyte populations from single-cell expanded HSCs)"
-  )
+my_chr <- paste0("chr", c(1:19, "X"))
 
-ggsave(
-  "../asynchronous_replication_overlap/plots/blumenfeld_overlap_chr5genes.pdf",
-  width = 6,
-  height = 5
-)
+for (i in 1:length(my_chr)){
+  
+  assy_genes.expressed.data.hsc %>% #filter(is.na(gene))
+    #dplyr::filter(grepl("^chr11|^chr18|^chr19", seqnames)) %>% 
+    dplyr::filter(seqnames == my_chr[i]) %>% 
+    ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = cell_type)) +
+    theme_light() +
+    #geom_violin() +
+    geom_point() +
+    geom_jitter() +
+    coord_flip() +
+    facet_wrap(vars(clonality)) +
+    #facet_grid(vars(cell_type), vars(clonality))
+    #facet_grid( vars(seqnames),vars(clonality))
+    ggtitle(
+      paste0(my_chr[i], " expressed genes within Blumenfeld et. al regions",
+      subtitle = "(Lymplocyte populations from single-cell expanded HSCs)")
+    )
+  ggsave(
+    paste0("../asynchronous_replication_overlap/plots/blumenfeld_overlap_",my_chr[i],"genes.pdf"),
+    width = 6,
+    height = 5
+  )
+}
 
 
 # How do "our" "biased" genes overlap with the blumenfeld regions?
@@ -284,7 +290,7 @@ assy_genes.expressed.genetically_biased <- assy_genes.expressed.data %>%
 
 assy_genes.expressed.genetically_biased %>% 
   #filter(imprinted_status == "Imprinted") %>% 
-  ggplot(aes(x=gene, y = AI, alpha = abundance, color = cell_type)) +
+  ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = cell_type)) +
   theme_light() +
   #geom_violin() +
   geom_point() +

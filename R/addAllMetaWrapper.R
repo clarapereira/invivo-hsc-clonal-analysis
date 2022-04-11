@@ -1,5 +1,5 @@
 
-addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tables/genes_biomaRt.tsv", norm_path = "../abundance_edgeR/B_vs_T_v2/mean_abundance.tsv", cpm_threshold = 10){
+addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tables/genes_biomaRt.tsv", bedfile = "../asynchronous_replication_overlap/coordinates_mm10_exon.bed", norm_path = "../abundance_edgeR/B_vs_T_v2/mean_abundance.tsv", cpm_threshold = 10){
   #' @family this is a project-specific function (hsc rme project);
   #' 
   # ==============================================================================================================================
@@ -13,10 +13,20 @@ addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tab
     addBiomartMeta(
       biomart_path = biomart_path
     )
+  
   # ==============================================================================================================================
   # add normalized gene expression values and filter for CPM>10
   # ==============================================================================================================================
-  df_long_meta_biomart.expressed <-  df_long_meta_biomart %>% 
+  from_gtf <- getGtfCoordinates(bedfile = bedfile)
+  df_long_meta_biomart_gtf <- df_long_meta_biomart %>% 
+    dplyr::left_join(
+      from_gtf %>% dplyr::select(gene_id,  gene_name, strand) %>% dplyr::distinct(),
+      by = c("ID" = "gene_id")
+    ) 
+  # ==============================================================================================================================
+  # add normalized gene expression values and filter for CPM>10
+  # ==============================================================================================================================
+  df_long_meta_biomart_gtf.expressed <-  df_long_meta_biomart_gtf %>% 
     addNormalizedAndFilter(
       norm_path = norm_path, 
       cpm_threshold = cpm_threshold

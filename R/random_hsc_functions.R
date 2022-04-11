@@ -6,6 +6,7 @@ source(paste0(basepath,"R/addAllMetaWrapper.R"))
 source(paste0(basepath,"R/getGeneticallyBiased.R"))
 source(paste0(basepath,"R/addLohFromWes.R"))
 source(paste0(basepath,"R/addLohFromE6Rnaseq.R"))
+source(paste0(basepath,"R/getGtfCoordinates.R"))
 
 
 

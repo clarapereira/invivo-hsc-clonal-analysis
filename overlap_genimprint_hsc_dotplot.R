@@ -15,6 +15,7 @@ dataset <- "all_replace_with_downsampled"
 min_coverage <- 10    # coverage threshold
 cpm_threshold <- 10   # abundance threshold (is different from coverage)
 biomart_path <- "../tables/genes_biomaRt.tsv"   # already contains geneimprint data
+bedfile <- "../asynchronous_replication_overlap/coordinates_mm10_exon.bed"
 abundance_path <- "../abundance_edgeR/B_vs_T_v2/mean_abundance.tsv"
 loh_wes_path <- "../tables/wes/LOH_wes_light_thrcov_90.tsv"
 output_plot_path <- "../imprinted/plots"
@@ -35,15 +36,50 @@ head(aici_table_long)
 # - biomart db
 # - expression data 
 # - filter by genes by expression (choose threshold)
-aici_table_long.expressed <- aici_table_long %>% 
+aici_table_long.expressed.badImprint <- aici_table_long %>% 
   addAllMetaWrapper(
     biomart_path = biomart_path, 
+    bedfile = bedfile,
     norm_path = abundance_path, 
     cpm_threshold = cpm_threshold
   ) %>% 
   # keep only chr of interest
-  dplyr::filter(!grepl("^chrJ|^chrG|^chrMT|^chrY", chr)) ; head(aici_table_long.expressed)
+  dplyr::filter(!grepl("^chrJ|^chrG|^chrMT|^chrY", chr)) ; head(aici_table_long.expressed.badNames )
 
+aici_table_long.expressed.badImprint %>% 
+  dplyr::select(ID, imprinted_status) %>% 
+  dplyr::distinct() %>% 
+  dplyr::group_by(imprinted_status) %>% 
+  dplyr::summarise(n())
+
+
+# retrieve as many imprinted genes as possible: 
+geneimprint.annotated <- data.table::fread("../tables/geneimprint.annotated.tsv") 
+
+
+aici_table_long.expressed <- aici_table_long.expressed.badImprint %>% 
+  dplyr::rename(imprinted_status.old = imprinted_status) %>% 
+  left_join(
+    geneimprint.annotated %>% dplyr::select(ensembl_id, imprinted_status),
+    by = c("ID" = "ensembl_id")
+  ) 
+aici_table_long.expressed %>% 
+  filter(imprinted_status.old == "Imprinted" | imprinted_status == "Imprinted" ) %>% 
+  dplyr::select(ID, gene, gene_name, imprinted_status.old, imprinted_status) %>% 
+  dplyr::distinct() #%>% 
+  #dplyr::group_by(imprinted_status.old) %>% 
+  #dplyr::group_by(imprinted_status) %>%
+  #dplyr::summarise(n())
+
+
+aici_table_long.expressed %>% 
+  dplyr::select(ID, imprinted_status, gene_name, gene) %>% 
+  dplyr::distinct() %>% 
+  dplyr::filter(is.na(gene_name))
+
+# from_gtf %>% filter(gene_id == "ENSMUSG00000023795")
+# from_gtf %>% filter(gene_name == "Pisd-ps2")
+# aici_table_long.expressed %>% filter(gene == "Pisd-ps2") %>% distinct()
 # ==============================================================================================================================
 # 2. add also LOH: 
 # ==============================================================================================================================
@@ -69,13 +105,13 @@ aici_table_long.expressed.noloh <- aici_table_long.expressed.lohwes %>% #nrow()
 message(
   "Total genes expressed in the dataset: ",
   aici_table_long.expressed %>% 
-    select(ID) %>% 
-    distinct() %>% 
+    dplyr::select(ID) %>% 
+    dplyr::distinct() %>% 
     nrow(),
   "\nAfter LOH removal, remained: ",
   aici_table_long.expressed.noloh %>% 
-    select(ID) %>% 
-    distinct() %>% 
+    dplyr::select(ID) %>% 
+    dplyr::distinct() %>% 
     nrow()
 )
 
@@ -84,30 +120,30 @@ message(
 )
 # all database: 
 aici_table_long.expressed.noloh %>% 
-  select(ID, gene, imprinted_status) %>% 
-  distinct() %>% 
-  group_by(imprinted_status) %>% 
-  summarise(count = n())
+  dplyr::select(ID, gene, imprinted_status) %>% 
+  dplyr::distinct() %>% 
+  dplyr::group_by(imprinted_status) %>% 
+  dplyr::summarise(count = n())
 # in B cells: 
 message(
   "How many of these are imprinted in B cells?"
 )
 aici_table_long.expressed.noloh %>% 
-  filter(cell_type == "Bcells") %>% 
-  select(ID, gene, imprinted_status) %>% 
-  distinct() %>% 
-  group_by(imprinted_status) %>% 
-  summarise(count = n())
+  dplyr::filter(cell_type == "Bcells") %>% 
+  dplyr::select(ID, gene, imprinted_status) %>% 
+  dplyr::distinct() %>% 
+  dplyr::group_by(imprinted_status) %>% 
+  dplyr::summarise(count = n())
 # in T cells: 
 message(
   "How many of these are imprinted in T cells?"
 )
 aici_table_long.expressed.noloh %>% 
-  filter(cell_type == "Tcells") %>% 
-  select(ID, gene, imprinted_status) %>% 
-  distinct() %>% 
-  group_by(imprinted_status) %>% 
-  summarise(count = n())
+  dplyr::filter(cell_type == "Tcells") %>% 
+  dplyr::select(ID, gene, imprinted_status) %>% 
+  dplyr::distinct() %>% 
+  dplyr::group_by(imprinted_status) %>% 
+  dplyr::summarise(count = n())
 
 # ==============================================================================================================================
 # 3. Plot
@@ -115,8 +151,8 @@ aici_table_long.expressed.noloh %>%
 # how do these "imprinted" genes look like in our data?
 # with dots
 aici_table_long.expressed.noloh %>% 
-  filter(imprinted_status == "Imprinted") %>% 
-  ggplot(aes(x=gene, y = AI, alpha = abundance, color = cell_type)) + 
+  dplyr::filter(imprinted_status == "Imprinted") %>% 
+  ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = cell_type)) + 
   theme_light() +
   #geom_violin() +
   geom_point() +

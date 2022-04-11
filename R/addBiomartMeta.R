@@ -24,7 +24,8 @@ addBiomartMeta <- function(df_long = aici_table_long_meta, biomart_path = "../ta
   genes_biomaRt$ID <- as.character(genes_biomaRt$ID)
   #
   df_long_biomart <- df_long %>% 
-    left_join(genes_biomaRt, by= "ID") 
+    left_join(genes_biomaRt, by = "ID") 
+  #df_long_biomart %>% filter(is.na(gene)) %>% select(ID, gene) %>% distinct() # about 936 gene names missing???
   #
   head(df_long_biomart)
   #
