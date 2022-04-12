@@ -20,9 +20,16 @@ addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tab
   from_gtf <- getGtfCoordinates(bedfile = bedfile)
   df_long_meta_biomart_gtf <- df_long_meta_biomart %>% 
     dplyr::left_join(
-      from_gtf %>% dplyr::select(gene_id,  gene_name, strand) %>% dplyr::distinct(),
+      from_gtf %>% dplyr::select(gene_id,  gene_name, strand, seqnames) %>% dplyr::distinct(),
       by = c("ID" = "gene_id")
-    ) 
+    ) %>% 
+    mutate(
+      chr = case_when(
+        !is.na(seqnames) ~ seqnames,
+        !is.na(chr) ~ chr,
+        T ~ seqnames
+      )
+    )
   
   # ==============================================================================================================================
   # correct genemprint annotation
@@ -34,7 +41,7 @@ addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tab
       geneimprint.annotated %>% dplyr::select(ensembl_id, imprinted_status),
       by = c("ID" = "ensembl_id")
     ) 
-  
+  df_long_meta_biomart_gtf_imprintscorr$imprinted_status  <- df_long_meta_biomart_gtf_imprintscorr$imprinted_status  %>% replace_na("ND")
   
   # ==============================================================================================================================
   # add normalized gene expression values and filter for CPM>10

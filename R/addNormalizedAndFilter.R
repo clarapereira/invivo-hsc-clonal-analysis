@@ -13,6 +13,8 @@ addNormalizedAndFilter <- function(df_long = aici_table_long_meta_biomart, norm_
   #' @example aici_table_long.expressed <- aici_table_long_meta_biomart %>% addNormalizedAndFilter(norm_path = "../abundance_edgeR/B_vs_T_v2/mean_abundance.tsv", cpm_threshold = 10)
   #' 
   abundance <- data.table::fread(norm_path)
+  abundance$mean_abundance <- as.numeric(round(abundance$mean_abundance, 2))
+  abundance$std_abundance <- as.numeric(round(abundance$std_abundance, 2))
   #
   df_long.expressed <- df_long %>% 
     left_join(
