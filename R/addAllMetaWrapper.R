@@ -34,11 +34,12 @@ addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tab
   # ==============================================================================================================================
   # correct genemprint annotation
   # ==============================================================================================================================
-  geneimprint.annotated <- data.table::fread("../tables/geneimprint.annotated.tsv") 
+  #geneimprint.annotated <- data.table::fread("../tables/geneimprint.annotated.tsv") 
+  imprinted.annotated <- data.table::fread("../tables/gtf.mm10.v68.geneimprint.tucci2919.annotated.tsv") 
   df_long_meta_biomart_gtf_imprintscorr <-  df_long_meta_biomart_gtf %>% 
     dplyr::rename(imprinted_status.old = imprinted_status) %>% 
     left_join(
-      geneimprint.annotated %>% dplyr::select(ensembl_id, imprinted_status),
+      imprinted.annotated %>% dplyr::select(gene_id, imprinted_status, expressed_allele) %>% rename("ensembl_id" = "gene_id"),
       by = c("ID" = "ensembl_id")
     ) 
   df_long_meta_biomart_gtf_imprintscorr$imprinted_status  <- df_long_meta_biomart_gtf_imprintscorr$imprinted_status  %>% replace_na("ND")

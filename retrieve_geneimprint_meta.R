@@ -60,17 +60,20 @@ from_gtf %>% filter(gene_name =="Peg3as")
 # ==================================================================================================================
 # retrieving 2019 Tucci data: 
 # ==================================================================================================================
-tucci_path <- "../imprinted/data/Tucci_2019_suppl.xlsx"
+tucci_path <- "../imprinted/raw/Tucci_2019_suppl.xlsx"
 tucci <- readxl::read_excel((tucci_path))
 
 
-from_gtf %>% select(seqnames, gene_id, gene_name, strand) %>% 
+from_gtf.imprinted <-  from_gtf %>% select(seqnames, gene_id, gene_name, strand) %>% 
   distinct() %>% 
   left_join(
     tucci, 
     by = c("gene_name" = "gene_alias")
   ) %>% 
-  mutate(imprinted_status.tucci = "imprinted_tucci") %>% 
+  mutate(imprinted_status.tucci = case_when(
+    !is.na(Expressed_allele) ~ "imprinted_tucci"
+    )
+    ) %>% 
   #filter(!is.na(Expressed_allele)) %>% #View()
   #nrow()                                                # 159 genes identifyed in our annotation
   #head() 
@@ -92,12 +95,25 @@ from_gtf %>% select(seqnames, gene_id, gene_name, strand) %>%
           "imprinted_status" = "imprinted_status.new", 
           "expressed_allele.geneimprint" = "Expressed Allele",
           "expressed_allele.tucci" = "Expressed_allele"
-          ) %>% 
+          ) 
+
+from_gtf.imprinted %>% 
   write_delim("../tables/gtf.mm10.v68.geneimprint.tucci2919.annotated.tsv", delim = "\t")
 
 
+from_gtf.imprinted %>% 
+  select(gene_id, imprinted_status.geneimprint) %>% 
+  distinct() %>% 
+  group_by(imprinted_status.geneimprint) %>% 
+  summarise(n()) %>% 
+  write_delim("../tables/gtf.mm10.v68.geneimprint.STATS.tsv", delim = "\t") 
 
-
+from_gtf.imprinted %>% 
+  select(gene_id, imprinted_status) %>% 
+  distinct() %>% 
+  group_by(imprinted_status) %>% 
+  summarise(n()) %>% 
+  write_delim("../tables/gtf.mm10.v68.tucci2919.STATS.tsv", delim = "\t")
 
 
 
