@@ -115,8 +115,14 @@ from_gtf.imprinted %>%
   summarise(n()) %>% 
   write_delim("../tables/gtf.mm10.v68.tucci2919.STATS.tsv", delim = "\t")
 
+from_gtf.imprinted %>% 
+  select(gene_id, imprinted_status.geneimprint, imprinted_status.tucci) %>% 
+  distinct() %>% 
+  group_by(imprinted_status.geneimprint, imprinted_status.tucci) %>% 
+  summarise(count = n()) %>% 
+  write_delim("../tables/gtf.mm10.v68.geneimprint_vs_tucci2919.STATS.tsv", delim = "\t")
 
-
-
+# there are 29 genes in geneimprint that are not in Tucci (!!!)
+# there are 85 genes in Tucci that are not in geneimprint(!!!)
 
 
