@@ -44,7 +44,7 @@ aici_table_long.expressed <- aici_table_long %>%
     cpm_threshold = cpm_threshold
   ) %>% 
   # keep only chr of interest
-  dplyr::filter(!grepl("^chrJ|^chrG|^chrMT|^chrY", chr)) ; head(aici_table_long.expressed.badNames )
+  dplyr::filter(!grepl("^chrJ|^chrG|^chrMT|^chrY", chr)) ; head(aici_table_long.expressed)
 
 
 # # retrieve as many imprinted genes as possible: 
@@ -144,6 +144,13 @@ aici_table_long.expressed.noloh %>%
 # ==============================================================================================================================
 # how do these "imprinted" genes look like in our data?
 # with dots
+
+#tissueColors <- c("#FD6467", "#5B1A18")
+#tissueColors <- c("pink", "brown")
+
+# Box plot
+
+
 aici_table_long.expressed.noloh %>% 
   dplyr::filter(imprinted_status == "Imprinted") %>% 
   ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = cell_type)) + 
@@ -152,17 +159,18 @@ aici_table_long.expressed.noloh %>%
   geom_point() +
   geom_jitter() +
   coord_flip() +
+  #scale_color_manual(values=tissueColors) +
   facet_wrap(vars(clonality)) +
   #facet_grid(vars(cell_type), vars(clonality)) + 
   ggtitle(
-    "Geneimprint 'Imprinted' genes expressed in our samples",
-    subtitle = "(Lymplocyte populations from single-cell expanded HSCs)"
+    "'Imprinted' genes expressed in B cells and T cells",
+    subtitle = "(lymphocyte populations expanded from 1 HSCs in vivo)"
   )
 
 ggsave(
-  paste0(output_plot_path, "/imprinted_genes_expressed_in_hsc_samples.pdf"),
-  width = 6,
-  height = 5
+  paste0(output_plot_path, "/imprinted_genes_expressed_cpm",cpm_threshold,"_in_hsc_samples.pdf"),
+  width = 7,
+  height = 9
 )
 
 message(
