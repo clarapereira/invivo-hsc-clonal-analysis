@@ -56,3 +56,51 @@ write_delim(geneimprint.annotated, "../tables/geneimprint.annotated.tsv", delim 
 
 from_gtf %>% filter(gene_name =="Peg3as")
 
+
+# ==================================================================================================================
+# retrieving 2019 Tucci data: 
+# ==================================================================================================================
+tucci_path <- "../imprinted/data/Tucci_2019_suppl.xlsx"
+tucci <- readxl::read_excel((tucci_path))
+
+
+from_gtf %>% select(seqnames, gene_id, gene_name, strand) %>% 
+  distinct() %>% 
+  left_join(
+    tucci, 
+    by = c("gene_name" = "gene_alias")
+  ) %>% 
+  mutate(imprinted_status.tucci = "imprinted_tucci") %>% 
+  #filter(!is.na(Expressed_allele)) %>% #View()
+  #nrow()                                                # 159 genes identifyed in our annotation
+  #head() 
+  left_join(
+    geneimprint.annotated %>% select(-Aliases, -strand, -chr,   -ensembl_id), 
+    by = c("gene_name" = "Gene")
+  ) %>% 
+  mutate(
+    imprinted_status.new = case_when(
+      imprinted_status.tucci == "imprinted_tucci" ~ "Imprinted",
+      !is.na(imprinted_status) ~ imprinted_status
+    ),
+    expressed_allele = case_when(
+      !is.na(Expressed_allele) | !is.na(`Expressed Allele`) ~ paste0(Expressed_allele, "|", `Expressed Allele`)
+  ) ) %>% 
+  rename( "Location.geneimprint" = "Location.x",
+          "Location.tucci" = "Location.y",
+          "imprinted_status.geneimprint"  = "imprinted_status" , 
+          "imprinted_status" = "imprinted_status.new", 
+          "expressed_allele.geneimprint" = "Expressed Allele",
+          "expressed_allele.tucci" = "Expressed_allele"
+          ) %>% 
+  write_delim("../tables/gtf.mm10.v68.geneimprint.tucci2919.annotated.tsv", delim = "\t")
+
+
+
+
+
+
+
+
+
+
