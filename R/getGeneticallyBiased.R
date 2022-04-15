@@ -1,6 +1,6 @@
 
 
-getGeneticallyBiased <- function(df_long = aici_table_long.expressed, min_impr  = 0.1, max_impr = 0.9){
+getGeneticallyBiased <- function(df_long = aici_table_long.expressed, min_impr  = 0.15, max_impr = 0.85){
   #' @family this is a project-specific function (hsc rme project);
   #' Identify genetically biased genesin our samples
   #' From OLD: "para cada gene vi se em todas as amostras poly e mono com desvio, se o desvio AI sempre AI > 0.9 ou sempre AI < 0.1"

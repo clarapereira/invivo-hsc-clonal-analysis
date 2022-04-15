@@ -1,5 +1,5 @@
 
-addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tables/genes_biomaRt.tsv", bedfile = "../asynchronous_replication_overlap/coordinates_mm10_exon.bed", norm_path = "../abundance_edgeR/B_vs_T_v2/mean_abundance.tsv", cpm_threshold = 10){
+addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tables/genes_biomaRt.tsv", bedfile = "../asynchronous_replication_overlap/coordinates_mm10_exon.bed", norm_path = "../abundance_edgeR/B_vs_T_v2/mean_abundance.tsv", cpm_threshold = 10, imprinted_path = "../tables/gtf.mm10.v68.geneimprint.tucci2919.annotated.tsv" ){
   #' @family this is a project-specific function (hsc rme project);
   #' 
   # ==============================================================================================================================
@@ -23,7 +23,7 @@ addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tab
       from_gtf %>% dplyr::select(gene_id,  gene_name, strand, seqnames) %>% dplyr::distinct(),
       by = c("ID" = "gene_id")
     ) %>% 
-    mutate(
+    dplyr::mutate(
       chr = case_when(
         !is.na(seqnames) ~ seqnames,
         !is.na(chr) ~ chr,
@@ -35,11 +35,11 @@ addAllMetaWrapper <- function(df_long = aici_table_long,  biomart_path = "../tab
   # correct genemprint annotation
   # ==============================================================================================================================
   #geneimprint.annotated <- data.table::fread("../tables/geneimprint.annotated.tsv") 
-  imprinted.annotated <- data.table::fread("../tables/gtf.mm10.v68.geneimprint.tucci2919.annotated.tsv") 
+  imprinted.annotated <- data.table::fread(imprinted_path) 
   df_long_meta_biomart_gtf_imprintscorr <-  df_long_meta_biomart_gtf %>% 
-    dplyr::rename(imprinted_status.old = imprinted_status) %>% 
+    dplyr::rename("imprinted_status.old" = "imprinted_status") %>% 
     left_join(
-      imprinted.annotated %>% dplyr::select(gene_id, imprinted_status, expressed_allele) %>% rename("ensembl_id" = "gene_id"),
+      imprinted.annotated %>% dplyr::select(gene_id, imprinted_status, expressed_allele) %>% rename( "gene_id" = "ensembl_id"),
       by = c("ID" = "ensembl_id")
     ) 
   df_long_meta_biomart_gtf_imprintscorr$imprinted_status  <- df_long_meta_biomart_gtf_imprintscorr$imprinted_status  %>% replace_na("ND")

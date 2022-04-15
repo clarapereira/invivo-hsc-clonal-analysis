@@ -10,6 +10,8 @@ dataset <- "all_replace_with_downsampled"
 min_coverage <- 10
 coverage_threshold <- min_coverage
 
+plot_out_path <- "../asynchronous_replication_overlap/plots/abelson/"
+
 # ==============================================================================================================================
 # import abl data: 
 # ==============================================================================================================================
@@ -25,6 +27,7 @@ aici_table_long.expressed <- abl_aici_table_long %>%
  addAllMetaWrapper(
   biomart_path = "../tables/genes_biomaRt.tsv", 
   norm_path = "../abundance_edgeR/abelson2/mean_abundance.tsv", 
+  imprinted_path = "../tables/gtf.mm10.v68.geneimprint.tucci2919.annotated.tsv",
   cpm_threshold = 10
  ) %>% 
  # keep only chr of interest
@@ -74,13 +77,13 @@ aici_table_long.expressed.noloh %>%
  geom_jitter() +
  coord_flip() +
   ggtitle(
-    "Geneimprint 'Imprinted' genes expressed in abelson clones"
+    "Imprinted genes expressed in abelson clones"
   )
 
 ggsave(
   "../imprinted/plots/imprinted_genes_expressed_in_abelson.pdf",
   width = 6,
-  height = 5
+  height = 10
 )
 
 # ==============================================================================================================================
@@ -100,7 +103,7 @@ get_lifted <- data.table::fread(blumenfeld_bed) %>%
 # get coordinates from our annotation 
 # ==============================================================================================================================
 
-bed = "/Users/clarapereira/Dropbox/Boston_partners/HSC_clones_shared_folder/asynchronous_replication_overlap/coordinates_mm10.bed"
+bed = "/Users/clarapereira/Dropbox/Boston_partners/HSC_clones_shared_folder/asynchronous_replication_overlap/coordinates_mm10_exon.bed"
 
 coord_from_gtf <- data.table::fread(bed) %>% 
  # keep only autosomes and X chromosome: 
@@ -114,7 +117,7 @@ coord_from_gtf <- data.table::fread(bed) %>%
   "strand" = "V7",
   "gene_id" = "V4",
   "gene_name" = "V5"
- )
+ ); head(coord_from_gtf)
 
 # ==============================================================================================================================
 # Make the overlaps: 
@@ -172,7 +175,7 @@ assy_genes.expressed.data %>%
 # ==============================================================================================================================
 # How do they look like?
 # ==============================================================================================================================
-assy_genes.expressed.data.abelson <- assy_genes.expressed.data %>% 
+assy_genes.expressed.data.abelson <- assy_genes.expressed.data %>% select(-gene_name, -seqnames) %>% 
  na.omit() %>% 
  left_join(
   aici_table_long.expressed.noloh, 
@@ -180,27 +183,47 @@ assy_genes.expressed.data.abelson <- assy_genes.expressed.data %>%
  ); head(assy_genes.expressed.data.abelson)
 
 assy_genes.expressed.data.abelson %>% 
- dplyr::filter(grepl("^chr11|^chr18", seqnames)) %>% 
+ dplyr::filter(grepl("^chr11|^chr18", 
+                     seqnames)) %>% 
  #dplyr::filter(seqnames == "chr11") %>% 
- ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = sample)) +
- theme_light() +
- #geom_violin() +
- geom_point() +
- geom_jitter() +
- coord_flip() +
- #facet_wrap(vars(BT_CC))
- #facet_grid(vars(sample), vars(BT_CC))
-ggtitle(
-  "chr11 & chr18 abelson expressed genes",
-  subtitle = "within Blumenfeld et. al regions"
-)
+ ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = sample)) + 
+  scale_y_continuous(limits = c(0, 1))  +
+  theme_light() +
+  geom_point() +
+  geom_jitter() +
+  coord_flip() +
+  ggtitle("chr11 & chr18 abelson expressed genes",
+          subtitle = "within Blumenfeld et. al regions")
 
 ggsave(
-  "../asynchronous_replication_overlap/plots/blumenfeld_overlap_chr11chr18genes_abelson.pdf",
+  paste0(plot_out_path, "/blumenfeld_overlap_chr11chr18genes_abelson.pdf"),
   width = 6,
   height = 5
 )
- 
+
+my_chr <- paste0("chr", c(1:19, "X"))
+
+for (i in 1:length(my_chr)){
+  
+  assy_genes.expressed.data.abelson %>% #head()
+    dplyr::filter(seqnames == my_chr[i]) %>% 
+    ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = sample)) +
+    scale_y_continuous(limits = c(0, 1))  +
+    theme_light() +
+    geom_point() +
+    geom_jitter() +
+    coord_flip() +
+    #facet_wrap(vars(clonality)) +
+    ggtitle(paste0(my_chr[i], " abelson expressed genes"),
+            subtitle = "within Blumenfeld et. al regions"
+            )
+  ggsave(
+    paste0(paste0(plot_out_path, "/blumenfeld_overlap_",my_chr[i],"genes.pdf")),
+    width = 6,
+    height = 5
+  )
+}
+
  
  
  

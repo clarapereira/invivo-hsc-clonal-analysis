@@ -11,6 +11,7 @@ dataset <- "all_replace_with_downsampled"
 min_coverage <- 10
 coverage_threshold <- min_coverage
 
+plot_out_path <- "../asynchronous_replication_overlap/plots/hsc_expanded/"
 
 # ==============================================================================================================================
 # import data: 
@@ -26,7 +27,9 @@ head(aici_table_long)
 aici_table_long.expressed <- aici_table_long %>% 
   addAllMetaWrapper(
     biomart_path = "../tables/genes_biomaRt.tsv", 
+    bedfile = "../asynchronous_replication_overlap/coordinates_mm10_exon.bed",
     norm_path = "../abundance_edgeR/B_vs_T_v2/mean_abundance.tsv", 
+    imprinted_path = "../tables/gtf.mm10.v68.geneimprint.tucci2919.annotated.tsv",
     cpm_threshold = 10
   ) %>% 
   # keep only chr of interest
@@ -43,6 +46,7 @@ aici_table_long.expressed.lohwes.lohrna <- aici_table_long.expressed.lohwes %>%
   )
 # remove LOH: 
 aici_table_long.expressed.noloh <- aici_table_long.expressed.lohwes.lohrna %>% #nrow()
+  #dplyr::filter(LOH_ANYsamples == "not_loh" & LOH_E6_RNA == "not_loh")
   dplyr::filter(LOH_ANYsamples == "not_loh" & LOH_E6_RNA == "not_loh")
 aici_table_long.expressed.noloh %>% nrow()
 
@@ -58,44 +62,44 @@ aici_table_long.expressed.noloh %>%
   dplyr::distinct() %>% 
   nrow()
 
-# how many of these are imprinted?
-aici_table_long.expressed.noloh %>% 
-  dplyr::select(ID, gene, imprinted_status) %>% 
-  dplyr::distinct() %>% 
-  dplyr::group_by(imprinted_status) %>% 
-  dplyr::summarise(count = n())
-
-# how do these imprinted look like in our data?
-aici_table_long.expressed.noloh %>% #head()
-  #filter(clonality == "non_monoclonal") %>% 
-  dplyr::filter(imprinted_status == "Imprinted") %>% 
-  #na.omit() %>% 
-  ggplot(aes(x=gene, y = AI)) +
-  theme_light() +
-  geom_violin() +
-  coord_flip() +
-  facet_wrap(vars(clonality))
-# with dots
-aici_table_long.expressed.noloh %>% 
-  dplyr::filter(imprinted_status == "Imprinted") %>% 
-  ggplot(aes(x=gene, y = AI, alpha = abundance, color = cell_type)) + 
-  theme_light() +
-  #geom_violin() +
-  geom_point() +
-  geom_jitter() +
-  coord_flip() +
-  facet_wrap(vars(clonality)) +
-  #facet_grid(vars(cell_type), vars(clonality)) + 
-  ggtitle(
-    "Geneimprint 'Imprinted' genes expressed in our samples",
-    subtitle = "(Lymplocyte populations from single-cell expanded HSCs)"
-  )
-
-ggsave(
-  "../imprinted/plots/imprinted_genes_expressed_in_our_samples.pdf",
-  width = 6,
-  height = 5
-)
+# # how many of these are imprinted?
+# aici_table_long.expressed.noloh %>% 
+#   dplyr::select(ID, gene, imprinted_status) %>% 
+#   dplyr::distinct() %>% 
+#   dplyr::group_by(imprinted_status) %>% 
+#   dplyr::summarise(count = n())
+# 
+# # how do these imprinted look like in our data?
+# aici_table_long.expressed.noloh %>% #head()
+#   #filter(clonality == "non_monoclonal") %>% 
+#   dplyr::filter(imprinted_status == "Imprinted") %>% 
+#   #na.omit() %>% 
+#   ggplot(aes(x=gene, y = AI)) +
+#   theme_light() +
+#   geom_violin() +
+#   coord_flip() +
+#   facet_wrap(vars(clonality))
+# # with dots
+# aici_table_long.expressed.noloh %>% 
+#   dplyr::filter(imprinted_status == "Imprinted") %>% 
+#   ggplot(aes(x=gene, y = AI, alpha = abundance, color = cell_type)) + 
+#   theme_light() +
+#   #geom_violin() +
+#   geom_point() +
+#   geom_jitter() +
+#   coord_flip() +
+#   facet_wrap(vars(clonality)) +
+#   #facet_grid(vars(cell_type), vars(clonality)) + 
+#   ggtitle(
+#     "Imprinted genes expressed in our samples",
+#     subtitle = "(Lymplocyte populations from single-cell expanded HSCs)"
+#   )
+# 
+# ggsave(
+#   "../imprinted/plots/imprinted_genes_expressed_in_our_samples.pdf",
+#   width = 6,
+#   height = 5
+# )
 
 # ==============================================================================================================================
 # Import Blumenfeld regions, after liftover mm9 --> mm10 (UCSC table browser, 5 April 2022)
@@ -181,7 +185,7 @@ assy_genes %>%
 # ==============================================================================================================================
 # How many of these genes are expressed in our dataset?
 # ==============================================================================================================================
-assy_genes.expressed.data <- assy_genes %>% 
+assy_genes.expressed.data <- assy_genes %>%  #select(-gene_name, -seqnames) %>% 
   dplyr::left_join(
     aici_table_long.expressed.noloh %>% dplyr::select(ID) %>% dplyr::distinct() %>% dplyr::mutate(expressed = "yes"),
     by = c("gene_id" = "ID")
@@ -218,25 +222,53 @@ assy_genes %>%
   dplyr::filter(gene_name == "Vmn1r211")
 
 # ==============================================================================================================================
-# How many of the genes in the Blumenfeld regions are imprinted according with geneimprint?
+# How many of the genes in the Blumenfeld regions are imprinted?
 # ==============================================================================================================================
 
-assy_genes.imprint.data <- assy_genes.expressed.data %>% #nrow()
-  dplyr::rename(ID = gene_id) %>% 
-  addBiomartMeta(biomart_path = "../tables/genes_biomaRt.tsv"); head(assy_genes.imprint.data)
-#assy_genes.imprint.data %>% filter(is.na(gene))
-assy_genes.imprint.data %>% 
+assy_genes.expressed.data.imprinted <- assy_genes.expressed.data %>%  select(-gene_name, -seqnames) %>% 
+  left_join(#aici_table_long.expressed.lohwes.lohrna,
+            aici_table_long.expressed.noloh,
+            by  = c("gene_id" = "ID")
+  ); head(assy_genes.expressed.data.imprinted)
+
+# how many imprinted?
+assy_genes.expressed.data.imprinted %>% 
+  select(gene_id,imprinted_status) %>% 
+  distinct() %>% 
   group_by(imprinted_status) %>% 
   summarise(count = n())
 
+# which genes?
+assy_genes.expressed.data.imprinted %>% 
+  select(gene_id, gene_name, chr, imprinted_status) %>% 
+  distinct() %>% 
+  filter(imprinted_status == "Imprinted")
 
-assy_genes.imprint.data %>% filter(imprinted_status == "Imprinted")
+assy_genes.expressed.data.imprinted %>% 
+  filter(imprinted_status == "Imprinted") %>% 
+  ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = cell_type)) +
+  theme_light() +
+  #geom_violin() +
+  geom_point() +
+  geom_jitter() +
+  coord_flip() +
+  facet_wrap(vars(clonality)) +
+  #facet_grid(vars(cell_type), vars(clonality))
+  ggtitle(
+    "Imprinted genes within Blumenfeld et. al regions",
+    subtitle = "(Lymplocyte populations from single-cell expanded HSCs)"
+  )
+ggsave(
+  paste0(paste0(plot_out_path, "/blumenfeld_overlap_imprinted.pdf")),
+  width = 6,
+  height = 3
+)
 
 
 # ==============================================================================================================================
 # How do all genes look like, chromosome by chromosome
 # ==============================================================================================================================
-assy_genes.expressed.data.hsc <- assy_genes.expressed.data %>% 
+assy_genes.expressed.data.hsc <- assy_genes.expressed.data %>% select(-gene_name, -seqnames) %>% 
   na.omit() %>% 
   left_join(
     aici_table_long.expressed.noloh, 
@@ -251,6 +283,7 @@ for (i in 1:length(my_chr)){
     #dplyr::filter(grepl("^chr11|^chr18|^chr19", seqnames)) %>% 
     dplyr::filter(seqnames == my_chr[i]) %>% 
     ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = cell_type)) +
+    scale_y_continuous(limits = c(0, 1))  +
     theme_light() +
     #geom_violin() +
     geom_point() +
@@ -264,7 +297,7 @@ for (i in 1:length(my_chr)){
       subtitle = "(Lymplocyte populations from single-cell expanded HSCs)")
     )
   ggsave(
-    paste0("../asynchronous_replication_overlap/plots/blumenfeld_overlap_",my_chr[i],"genes.pdf"),
+    paste0(paste0(plot_out_path, "/blumenfeld_overlap_",my_chr[i],"genes.pdf")),
     width = 6,
     height = 5
   )
@@ -272,15 +305,18 @@ for (i in 1:length(my_chr)){
 
 
 # How do "our" "biased" genes overlap with the blumenfeld regions?
-genetically_biased <- data.table::fread("/Users/clarapereira/Dropbox/Boston_partners/HSC_clones_shared_folder/tables/imprinted/gene_lists/genetically_biased_cutof10.tsv")
-aici_table_long.expressed.genetically_biased <- aici_table_long.expressed.noloh %>% 
+genetically_biased <- aici_table_long.expressed.noloh %>% 
+  getGeneticallyBiased(min_impr  = 0.15, max_impr = 0.85); head(genetically_biased)
+
+# genetically_biased <- data.table::fread("/Users/clarapereira/Dropbox/Boston_partners/HSC_clones_shared_folder/tables/imprinted/gene_lists/genetically_biased_cutof10.tsv")
+aici_table_long.expressed.genetically_biased <- aici_table_long.expressed.noloh %>%
   left_join(
-    genetically_biased,
+    genetically_biased %>% select(ID,starts_with("imprinted_")),
     by = "ID"
   ); head(aici_table_long.expressed.genetically_biased )
 
 
-assy_genes.expressed.genetically_biased <- assy_genes.expressed.data %>% 
+assy_genes.expressed.genetically_biased <- assy_genes.expressed.data %>% select(-gene_name, -seqnames) %>% 
   na.omit() %>% 
   left_join(
     aici_table_long.expressed.genetically_biased, 
@@ -288,10 +324,11 @@ assy_genes.expressed.genetically_biased <- assy_genes.expressed.data %>%
   ) %>% 
   filter(imprinted_Bcells == "genetically_biased" | imprinted_Tcells == "genetically_biased"); head(assy_genes.expressed.genetically_biased)
 
-assy_genes.expressed.genetically_biased %>% 
+assy_genes.expressed.genetically_biased %>%# nrow()
   #filter(imprinted_status == "Imprinted") %>% 
   ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = cell_type)) +
   theme_light() +
+  scale_y_continuous(limits = c(0, 1))  +
   #geom_violin() +
   geom_point() +
   geom_jitter() +
@@ -299,12 +336,13 @@ assy_genes.expressed.genetically_biased %>%
   facet_wrap(vars(clonality)) +
   #facet_grid(vars(cell_type), vars(clonality))
   ggtitle(
-    "Genetically biased genes (.1) within Blumenfeld et. al regions",
+    "Genetically biased genes (.15) within Blumenfeld et. al regions",
     subtitle = "(Lymplocyte populations from single-cell expanded HSCs)"
     )
 
 ggsave(
-  "../asynchronous_replication_overlap/plots/blumenfeld_overlap_genetically_biased_cutof10.pdf",
+  paste0(paste0(plot_out_path, "/blumenfeld_overlap_genetically_biased_cutof15.pdf")),
   width = 6,
   height = 3
     )
+
