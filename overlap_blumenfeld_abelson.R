@@ -172,6 +172,7 @@ assy_genes.expressed.data %>%
  na.omit() %>% 
  nrow()
 
+
 # ==============================================================================================================================
 # How do they look like?
 # ==============================================================================================================================
@@ -224,6 +225,30 @@ for (i in 1:length(my_chr)){
   )
 }
 
+
+
+# ==============================================================================================================================
+# Is any of these genes one of our RME from the B-cell clonal HSC analysis?
+# ==============================================================================================================================
+source("src/rme_abelson_aistdev.R")
+
+
+assy_genes.expressed.data.abelson %>% 
+  dplyr::filter(gene_name %in% rme_abelson_aistdev) %>% 
+  ggplot(aes(x=gene_name, y = AI, alpha = abundance, color = sample)) +
+  scale_y_continuous(limits = c(0, 1))  +
+  theme_light() +
+  geom_point() +
+  geom_jitter() +
+  coord_flip() +
+  ggtitle(paste0("Abelson RME with AIstdev>0.15"),
+          subtitle = "within Blumenfeld et. al regions"
+  )
+ggsave(
+  paste0(paste0(plot_out_path, "/blumenfeld_overlap_abelson_RMEAIstdev015.pdf")),
+  width = 6,
+  height = 3
+)
  
  
  
